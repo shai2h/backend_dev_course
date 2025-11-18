@@ -12,7 +12,7 @@ hotels = [
     {"id": 4, "title": "Казань", 'name': "kazan"},
 ]
 
-@app.get('/hotels')
+@app.get('/hotels', summary="Получить список отелей", description='Дополнительная информация')
 def get_hotels(
     title: str | None = Query(None, description='Название отеля')
 ):
@@ -22,7 +22,7 @@ def get_hotels(
         return hotels
     
 
-@app.delete('/delete_holel/{hotel_id}')
+@app.delete('/delete_holel/{hotel_id}', summary='Удалить отель', description='Дополнительная информация')
 def delete_hotel(
     hotel_id: int
 ):
@@ -37,7 +37,7 @@ def delete_hotel(
         }
 
 
-@app.post('/add_hotel')
+@app.post('/add_hotel', summary='Добавить отель', description='Дополнительная информация')
 def add_hotel(
     title: str = Body(embed=True), #embed -- возвращает пример ключ:значение & Body - для передачи в теле
 ):
@@ -48,7 +48,7 @@ def add_hotel(
     }
 
 
-@app.patch('/edit_hotel/{hotel_id}')
+@app.patch('/edit_hotel/{hotel_id}', summary='Частичное обновление данных', description='Дополнительная информация')
 def edit_hotel(
     hotel_id: int,
     title: str | None = Body(None, embed=True),
@@ -57,12 +57,14 @@ def edit_hotel(
     global hotels
     for hotel in hotels:
         if hotel['id'] == hotel_id:
-            hotel['title'] = title
-            hotel['name'] = name
+            if title is not None:
+                hotel['title'] = title
+            if name is not None:
+                hotel['name'] = name
     return {'status': 'ok'}
 
 
-@app.put('/put_hotel/{hotel_id}')
+@app.put('/put_hotel/{hotel_id}', summary='Полное обновление данных')
 def edit_hotel(
     hotel_id: int,
     title: str = Body(embed=True),
