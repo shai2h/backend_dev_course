@@ -1,5 +1,6 @@
 from fastapi import Query, Body, APIRouter, HTTPException
 from schemas.hotels import Hotel, HotelPatch
+from dependencies import PaginationDep
 
 
 router = APIRouter()
@@ -36,11 +37,8 @@ hotels = [
 
 @router.get('/hotels', summary="Получить список отелей", description='Дополнительная информация')
 def get_hotels( 
-    title: str | None = Query(None, description='Фильтр по названию'),
-    page: int | None = Query(1, description="Страница", ge=1),
-    per_page: int | None = Query(10, description="Количество отелей на странице", ge=1, le=100)
-
-
+    pagination: PaginationDep,
+    title: str | None = Query(None, description='Фильтр по названию')
 ):
     # Фильтрация по названию
     filtered_hotels = hotels
@@ -48,20 +46,18 @@ def get_hotels(
         filtered_hotels = [hotel for hotel in hotels if hotel["title"].lower() == title.lower()]
     
     # Пагинация
-    start = (page - 1) * per_page
-    end = start + per_page
+    start = (pagination.page - 1) * pagination.per_page
+    end = start + pagination.per_page
     pagination_hotels = filtered_hotels[start:end]
 
     return {
-        "page": page,
-        "per_page": per_page,
+        "page": pagination.page,
+        "per_page": pagination.per_page,
         "total": len(filtered_hotels),
-        "total_pages": (len(filtered_hotels) + per_page - 1) // per_page,  # округление вверх,
+        "total_pages": (len(filtered_hotels) + pagination.per_page - 1) // pagination.per_page,  # округление вверх,
         "data": pagination_hotels,
     }
-    
-
-    
+     
 
 @router.delete('/delete_holel/{hotel_id}', summary='Удалить отель', description='Дополнительная информация')
 def delete_hotel(
