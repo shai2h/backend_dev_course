@@ -13,6 +13,7 @@ from alembic import context
 
 from src.database import Base
 from src.models.hotels import HotelOrm
+from src.models.rooms import RoomsOrm
 from src.config import settings
 
 
