@@ -2,6 +2,12 @@ from fastapi import Query, Body, APIRouter, HTTPException
 from src.schemas.hotels import Hotel, HotelPatch
 from src.api.dependencies import PaginationDep
 
+from sqlalchemy import insert
+
+from models.hotels import HotelOrm
+
+from database import async_session_maker
+from database import engine
 
 router = APIRouter()
 
@@ -75,15 +81,20 @@ def delete_hotel(
 
 
 @router.post('/add_hotel', summary='Добавить отель', description='Дополнительная информация')
-def add_hotel(
+async def add_hotel(
     hotel_data: Hotel = Body(openapi_examples={
-        "1":{"summary":"Мурманск", "value":{"title":"Мурманск", "name":"murmansk-city"}}
+        "1":{"summary":"Мурманск", "value":{"title":"MOSCOW GRAND HOTEL", "location":"г. Москва"}}
     })
 ):
-    hotels.append({'id': len(hotels) + 1, 'title': hotel_data.title, 'name': hotel_data.name})
+    async with async_session_maker() as session:
+        add_hotel_stmt = insert(HotelOrm).values(**hotel_data.model_dump())
+        # Логирование SQL-запроса с подставленными значениями для отладки
+        # На проде не безопасно светить данные логи
+        print(add_hotel_stmt.compile(engine, compile_kwargs={"literal_binds": True}))
+        await session.execute(add_hotel_stmt)
+        await session.commit()
     return {
         'status': 'OK',
-        'message': f'{hotel_data.title} - added'
     }
 
 
