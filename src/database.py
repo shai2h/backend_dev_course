@@ -6,7 +6,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 
 # engine не делает запросы, раздает соединения
-engine = create_async_engine(settings.DB_URL) # подключение к базе данных
+engine = create_async_engine(settings.DB_URL) # подключение к базе данных, можно использовать echo=True для небольшого логирования
 
 """
 engine - хранит пул соеднинений
