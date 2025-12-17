@@ -2,7 +2,7 @@ from fastapi import Query, Body, APIRouter, HTTPException
 from src.schemas.hotels import Hotel, HotelPatch
 from src.api.dependencies import PaginationDep
 
-from sqlalchemy import insert
+from sqlalchemy import insert, select
 
 from models.hotels import HotelOrm
 
@@ -12,57 +12,37 @@ from database import engine
 router = APIRouter()
 
 
-hotels = [
-    {"id": 1, "title": "Сочи", "name": "sochi"},
-    {"id": 2, "title": "Дубай", "name": "dubai"},
-    {"id": 3, "title": "Москва", "name": "moskva"},
-    {"id": 4, "title": "Казань", "name": "kazan"},
-    {"id": 5, "title": "Санкт-Петербург", "name": "sankt-peterburg"},
-    {"id": 6, "title": "Новосибирск", "name": "novosibirsk"},
-    {"id": 7, "title": "Екатеринбург", "name": "ekaterinburg"},
-    {"id": 8, "title": "Тбилиси", "name": "tbilisi"},
-    {"id": 9, "title": "Баку", "name": "baku"},
-    {"id": 10, "title": "Алушта", "name": "alushta"},
-    {"id": 11, "title": "Геленджик", "name": "gelenjik"},
-    {"id": 12, "title": "Анапа", "name": "anapa"},
-    {"id": 13, "title": "Владивосток", "name": "vladivostok"},
-    {"id": 14, "title": "Калининград", "name": "kaliningrad"},
-    {"id": 15, "title": "Симферополь", "name": "simferopol"},
-    {"id": 16, "title": "Уфа", "name": "ufa"},
-    {"id": 17, "title": "Челябинск", "name": "chelyabinsk"},
-    {"id": 18, "title": "Ростов-на-Дону", "name": "rostov-na-donu"},
-    {"id": 19, "title": "Краснодар", "name": "krasnodar"},
-    {"id": 20, "title": "Минеральные Воды", "name": "mineralnye-vody"},
-    {"id": 21, "title": "Прага", "name": "praga"},
-    {"id": 22, "title": "Берлин", "name": "berlin"},
-    {"id": 23, "title": "Стамбул", "name": "stambul"},
-    {"id": 24, "title": "Бангкок", "name": "bangkok"},
-    {"id": 25, "title": "Пхукет", "name": "phuket"},
-]
-
 
 @router.get('/hotels', summary="Получить список отелей", description='Дополнительная информация')
-def get_hotels( 
+async def get_hotels( 
     pagination: PaginationDep,
     title: str | None = Query(None, description='Фильтр по названию')
 ):
-    # Фильтрация по названию
-    filtered_hotels = hotels
-    if title:
-        filtered_hotels = [hotel for hotel in hotels if hotel["title"].lower() == title.lower()]
-    
-    # Пагинация
-    start = (pagination.page - 1) * pagination.per_page
-    end = start + pagination.per_page
-    pagination_hotels = filtered_hotels[start:end]
+    async with async_session_maker() as session:
+        query = select(HotelOrm)
+        result = await session.execute(query)
 
-    return {
-        "page": pagination.page,
-        "per_page": pagination.per_page,
-        "total": len(filtered_hotels),
-        "total_pages": (len(filtered_hotels) + pagination.per_page - 1) // pagination.per_page,  # округление вверх,
-        "data": pagination_hotels,
-    }
+        # магический метод scalars - позволяет забрать 1 элемент из кортежа, т.к. запрос возвращает список из кортежей внутри кортежа 1 значение.
+        # all забираем всем кортежи
+        hotels = result.scalars().all()
+        print(type(hotels), hotels)
+        return {'msg:':'OK', 'data:':hotels}
+
+    # if title:
+    #     filtered_hotels = [hotel for hotel in hotels if hotel["title"].lower() == title.lower()]
+    
+    # # Пагинация
+    # start = (pagination.page - 1) * pagination.per_page
+    # end = start + pagination.per_page
+    # pagination_hotels = filtered_hotels[start:end]
+
+    # return {
+    #     "page": pagination.page,
+    #     "per_page": pagination.per_page,
+    #     "total": len(filtered_hotels),
+    #     "total_pages": (len(filtered_hotels) + pagination.per_page - 1) // pagination.per_page,  # округление вверх,
+    #     "data": pagination_hotels,
+    # }
      
 
 @router.delete('/delete_holel/{hotel_id}', summary='Удалить отель', description='Дополнительная информация')
