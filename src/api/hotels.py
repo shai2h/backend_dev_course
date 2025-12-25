@@ -12,23 +12,19 @@ from database import engine
 router = APIRouter()
 
 
-
 @router.get('/hotels', summary="Получить список отелей", description='Дополнительная информация')
 async def get_hotels(
     paggination: PaginationDep,
-    id: int | None = Query(None, description='Ид'),
     title: str | None = Query(None, description='Описание'),
     location: str | None = Query(None, description='Локация')
 ):
     per_page = paggination.per_page or 5
     async with async_session_maker() as session:
-        limit = paggination.per_page
-        offset = paggination.per_page * (paggination.page - 1)
         query = select(HotelOrm)
-        if id:
-            query = query.filter_by(id=id)
         if title:
-            query = query.filter_by(title=title)
+            query = query.filter(HotelOrm.title.contains(title))
+        if location:
+            query = query.filter(HotelOrm.location.contains(location))
         query = (
             query
             .limit(per_page)
@@ -37,6 +33,7 @@ async def get_hotels(
         result = await session.execute(query)
         hotels = result.scalars().all()
         return hotels
+
 
 @router.delete('/delete_holel/{hotel_id}', summary='Удалить отель', description='Дополнительная информация')
 def delete_hotel(
