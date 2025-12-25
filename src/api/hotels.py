@@ -2,7 +2,7 @@ from fastapi import Query, Body, APIRouter, HTTPException
 from src.schemas.hotels import Hotel, HotelPatch
 from src.api.dependencies import PaginationDep
 
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, func
 
 from models.hotels import HotelOrm
 
@@ -22,14 +22,17 @@ async def get_hotels(
     async with async_session_maker() as session:
         query = select(HotelOrm)
         if title:
-            query = query.filter(HotelOrm.title.contains(f"%{title}%"))
+            query = query.filter(func.lower(HotelOrm.title).contains(title.strip().lower()))
         if location:
-            query = query.filter(HotelOrm.location.contains(f"%{location}%"))
+            query = query.filter(func.lower(HotelOrm.location).like(location.strip().lower()))
         query = (
             query
             .limit(per_page)
             .offset(paggination.per_page * (paggination.page - 1))
         )
+        # логируем запрос к БД
+        print(query.compile(compile_kwargs={"literal_binds": True}))
+
         result = await session.execute(query)
         hotels = result.scalars().all()
         return hotels
