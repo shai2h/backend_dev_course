@@ -14,36 +14,29 @@ router = APIRouter()
 
 
 @router.get('/hotels', summary="Получить список отелей", description='Дополнительная информация')
-async def get_hotels( 
-    pagination: PaginationDep,
-    title: str | None = Query(None, description='Фильтр по названию')
+async def get_hotels(
+    paggination: PaginationDep,
+    id: int | None = Query(None, description='Ид'),
+    title: str | None = Query(None, description='Описание'),
+    location: str | None = Query(None, description='Локация')
 ):
+    per_page = paggination.per_page or 5
     async with async_session_maker() as session:
+        limit = paggination.per_page
+        offset = paggination.per_page * (paggination.page - 1)
         query = select(HotelOrm)
+        if id:
+            query = query.filter_by(id=id)
+        if title:
+            query = query.filter_by(title=title)
+        query = (
+            query
+            .limit(per_page)
+            .offset(paggination.per_page * (paggination.page - 1))
+        )
         result = await session.execute(query)
-
-        # магический метод scalars - позволяет забрать 1 элемент из кортежа, т.к. запрос возвращает список из кортежей внутри кортежа 1 значение.
-        # all забираем всем кортежи
         hotels = result.scalars().all()
-        print(type(hotels), hotels)
-        return {'msg:':'OK', 'data:':hotels}
-
-    # if title:
-    #     filtered_hotels = [hotel for hotel in hotels if hotel["title"].lower() == title.lower()]
-    
-    # # Пагинация
-    # start = (pagination.page - 1) * pagination.per_page
-    # end = start + pagination.per_page
-    # pagination_hotels = filtered_hotels[start:end]
-
-    # return {
-    #     "page": pagination.page,
-    #     "per_page": pagination.per_page,
-    #     "total": len(filtered_hotels),
-    #     "total_pages": (len(filtered_hotels) + pagination.per_page - 1) // pagination.per_page,  # округление вверх,
-    #     "data": pagination_hotels,
-    # }
-     
+        return hotels
 
 @router.delete('/delete_holel/{hotel_id}', summary='Удалить отель', description='Дополнительная информация')
 def delete_hotel(
