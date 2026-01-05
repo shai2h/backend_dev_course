@@ -6,7 +6,7 @@ from sqlalchemy import insert, select, func
 
 from repositories.hotels import HotelRepository
 
-from models.hotels import HotelOrm
+# from models.hotels import HotelOrm при использовании DAO(Repository) отключаем импорт модели, т.к. будет ошибка цикличного вызова
 
 from database import engine
 from database import async_session_maker
@@ -21,26 +21,16 @@ async def get_hotels(
     title: str | None = Query(None, description='Описание'),
     location: str | None = Query(None, description='Локация')
 ):
+    per_page = paggination.per_page or 5
     async with async_session_maker() as session:
-        return await HotelRepository(session).get_all()
-    # per_page = paggination.per_page or 5
-    # async with async_session_maker() as session:
-    #     query = select(HotelOrm)
-    #     if title:
-    #         query = query.filter(func.lower(HotelOrm.title).contains(title.strip().lower()))
-    #     if location:
-    #         query = query.filter(func.lower(HotelOrm.location).like(location.strip().lower()))
-    #     query = (
-    #         query
-    #         .limit(per_page)
-    #         .offset(paggination.per_page * (paggination.page - 1))
-    #     )
-    #     # логируем запрос к БД
-    #     print(query.compile(compile_kwargs={"literal_binds": True}))
+        return await HotelRepository(session).get_all(
+            location=location, 
+            title=title, 
+            limit=per_page, 
+            offset=per_page * (paggination.page - 1)
+        )
 
-    #     result = await session.execute(query)
-    #     hotels = result.scalars().all()
-    #     return hotels
+
 
 
 @router.delete('/delete_holel/{hotel_id}', summary='Удалить отель', description='Дополнительная информация')
